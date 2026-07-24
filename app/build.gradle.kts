@@ -180,7 +180,7 @@ dependencies {
 
 tasks.register("validateReleaseSigning") {
     group = "verification"
-    description = "Validates the presence of the release keystore and signing credentials before building."
+    description = "Validates the presence of the release keystore and signing credentials before starting the release build."
 
     doLast {
         val storeFileVar = System.getenv("KEYSTORE_FILE") ?: System.getenv("KEYSTORE_PATH")
@@ -189,11 +189,13 @@ tasks.register("validateReleaseSigning") {
         val keyPasswordVar = System.getenv("KEY_PASSWORD")
         val keystoreBase64 = System.getenv("KEYSTORE_BASE64")
 
-        println("=== RELEASE SIGNING VALIDATION ===")
-        println("KEYSTORE_FILE: ${storeFileVar ?: "Not Set"}")
-        println("KEYSTORE_PASSWORD: ${if (storePasswordVar.isNullOrEmpty()) "Not Set" else "Set (length: ${storePasswordVar.length})"}")
-        println("KEY_ALIAS: ${keyAliasVar ?: "Not Set"}")
-        println("KEY_PASSWORD: ${if (keyPasswordVar.isNullOrEmpty()) "Not Set" else "Set (length: ${keyPasswordVar.length})"}")
+        println("==================================================")
+        println("   AURA RELEASE SIGNING CONFIGURATION VALIDATION   ")
+        println("==================================================")
+        println("KEYSTORE_FILE: ${storeFileVar ?: "Not Set (Using defaults)"}")
+        println("KEYSTORE_PASSWORD: ${if (storePasswordVar.isNullOrEmpty()) "Not Set (Using fallback)" else "Set (length: ${storePasswordVar.length})"}")
+        println("KEY_ALIAS: ${keyAliasVar ?: "Not Set (Using fallback)"}")
+        println("KEY_PASSWORD: ${if (keyPasswordVar.isNullOrEmpty()) "Not Set (Using fallback)" else "Set (length: ${keyPasswordVar.length})"}")
         println("KEYSTORE_BASE64: ${if (keystoreBase64.isNullOrEmpty()) "Not Set" else "Set (length: ${keystoreBase64.length})"}")
 
         var hasKeystore = false
@@ -203,59 +205,63 @@ tasks.register("validateReleaseSigning") {
             val file = rootProject.file(storeFileVar)
             if (file.exists()) {
                 hasKeystore = true
-                keystoreSource = "File: ${file.name} (defined via KEYSTORE_FILE)"
+                keystoreSource = "File: ${file.absolutePath} (defined via KEYSTORE_FILE/KEYSTORE_PATH)"
             } else {
-                println("ERROR: KEYSTORE_FILE / KEYSTORE_PATH is set to '$storeFileVar' but file does not exist.")
+                println("ERROR: KEYSTORE_FILE / KEYSTORE_PATH is configured to '$storeFileVar' but the file does not exist.")
             }
         } else if (!keystoreBase64.isNullOrEmpty()) {
             try {
                 val decodedBytes = Base64.getDecoder().decode(keystoreBase64)
                 if (decodedBytes.isNotEmpty()) {
                     hasKeystore = true
-                    keystoreSource = "Base64 (defined via KEYSTORE_BASE64)"
+                    keystoreSource = "Base64 (decoded via KEYSTORE_BASE64)"
                 }
             } catch (e: Exception) {
-                println("ERROR: KEYSTORE_BASE64 is provided but is invalid Base64.")
+                println("ERROR: KEYSTORE_BASE64 env variable contains invalid Base64.")
             }
         } else {
-            // Check defaults
-            val defaultJks = rootProject.file("aura-learning.jks")
-            if (defaultJks.exists()) {
+            // Check standard fallback keystores
+            val auraJks = rootProject.file("aura-learning.jks")
+            val uploadKeystore = rootProject.file("upload_release.keystore")
+            val releaseKeystore = rootProject.file("release.keystore")
+
+            if (auraJks.exists()) {
                 hasKeystore = true
-                keystoreSource = "Default File: aura-learning.jks"
-            } else {
-                val defaultRelease = rootProject.file("upload_release.keystore")
-                if (defaultRelease.exists()) {
-                    hasKeystore = true
-                    keystoreSource = "Default File: upload_release.keystore"
-                }
+                keystoreSource = "Default File: ${auraJks.name}"
+            } else if (uploadKeystore.exists()) {
+                hasKeystore = true
+                keystoreSource = "Default File: ${uploadKeystore.name}"
+            } else if (releaseKeystore.exists()) {
+                hasKeystore = true
+                keystoreSource = "Default File: ${releaseKeystore.name}"
             }
         }
 
         if (!hasKeystore) {
-            throw GradleException("Release build configuration is incomplete. Keystore file is missing or unresolved. Please define KEYSTORE_FILE, KEYSTORE_BASE64, or place aura-learning.jks/upload_release.keystore in the project root.")
+            throw GradleException("Release build cannot start because the keystore file could not be resolved. Please configure KEYSTORE_FILE, KEYSTORE_BASE64, or place upload_release.keystore / aura-learning.jks in the project root directory.")
         }
 
-        println("Keystore successfully resolved: $keystoreSource")
+        println("Keystore resolved successfully: $keystoreSource")
 
-        // Validate basic passwords and alias mapping
+        // Map default settings if they are missing but we are falling back
         if (storePasswordVar.isNullOrEmpty()) {
-            println("WARNING: KEYSTORE_PASSWORD env variable is not set. A default password will be mapped.")
+            println("WARNING: KEYSTORE_PASSWORD is not set. A default password will be mapped at build time.")
         }
         if (keyAliasVar.isNullOrEmpty()) {
-            println("WARNING: KEY_ALIAS env variable is not set. A default alias will be mapped.")
+            println("WARNING: KEY_ALIAS is not set. A default key alias will be mapped at build time.")
         }
         if (keyPasswordVar.isNullOrEmpty()) {
-            println("WARNING: KEY_PASSWORD env variable is not set. A default password will be mapped.")
+            println("WARNING: KEY_PASSWORD is not set. A default key password will be mapped at build time.")
         }
-        println("=== VALIDATION COMPLETED SUCCESSFULLY ===")
+        println("==================================================")
+        println("   VALIDATION COMPLETED SUCCESSFULLY              ")
+        println("==================================================")
     }
 }
 
-// Hook it to preReleaseBuild to run before starting the release build process
+// Ensure validation runs before task execution for preReleaseBuild or assembleRelease
 tasks.whenTaskAdded {
     if (name == "preReleaseBuild") {
         dependsOn("validateReleaseSigning")
     }
 }
-
