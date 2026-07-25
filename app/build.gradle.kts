@@ -178,6 +178,9 @@ dependencies {
   // "ksp"(libs.moshi.kotlin.codegen)
 }
 
+// Helper function to check CI environment
+fun isCi(): Boolean = System.getenv("CI") == "true" || System.getenv("GITHUB_ACTIONS") == "true"
+
 tasks.register("validateReleaseSigning") {
     group = "verification"
     description = "Validates the presence of the release keystore and signing credentials before starting the release build."
@@ -192,6 +195,21 @@ tasks.register("validateReleaseSigning") {
         println("==================================================")
         println("   AURA RELEASE SIGNING CONFIGURATION VALIDATION   ")
         println("==================================================")
+        
+        // CI Strict Check
+        if (isCi()) {
+            val missingVars = mutableListOf<String>()
+            if (storePasswordVar.isNullOrEmpty()) missingVars.add("KEYSTORE_PASSWORD")
+            if (keyAliasVar.isNullOrEmpty()) missingVars.add("KEY_ALIAS")
+            if (keyPasswordVar.isNullOrEmpty()) missingVars.add("KEY_PASSWORD")
+            if (storeFileVar.isNullOrEmpty() && keystoreBase64.isNullOrEmpty()) missingVars.add("KEYSTORE_FILE/PATH or KEYSTORE_BASE64")
+
+            if (missingVars.isNotEmpty()) {
+                throw GradleException("CI Build Failed: Missing mandatory environment variables: ${missingVars.joinToString(", ")}")
+            }
+            println("CI Check: All mandatory variables present.")
+        }
+
         println("KEYSTORE_FILE: ${storeFileVar ?: "Not Set (Using defaults)"}")
         println("KEYSTORE_PASSWORD: ${if (storePasswordVar.isNullOrEmpty()) "Not Set (Using fallback)" else "Set (length: ${storePasswordVar.length})"}")
         println("KEY_ALIAS: ${keyAliasVar ?: "Not Set (Using fallback)"}")
@@ -244,15 +262,18 @@ tasks.register("validateReleaseSigning") {
         println("Keystore resolved successfully: $keystoreSource")
 
         // Map default settings if they are missing but we are falling back
-        if (storePasswordVar.isNullOrEmpty()) {
-            println("WARNING: KEYSTORE_PASSWORD is not set. A default password will be mapped at build time.")
+        if (!isCi()) {
+            if (storePasswordVar.isNullOrEmpty()) {
+                println("WARNING: KEYSTORE_PASSWORD is not set. A default password will be mapped at build time.")
+            }
+            if (keyAliasVar.isNullOrEmpty()) {
+                println("WARNING: KEY_ALIAS is not set. A default key alias will be mapped at build time.")
+            }
+            if (keyPasswordVar.isNullOrEmpty()) {
+                println("WARNING: KEY_PASSWORD is not set. A default key password will be mapped at build time.")
+            }
         }
-        if (keyAliasVar.isNullOrEmpty()) {
-            println("WARNING: KEY_ALIAS is not set. A default key alias will be mapped at build time.")
-        }
-        if (keyPasswordVar.isNullOrEmpty()) {
-            println("WARNING: KEY_PASSWORD is not set. A default key password will be mapped at build time.")
-        }
+        
         println("==================================================")
         println("   VALIDATION COMPLETED SUCCESSFULLY              ")
         println("==================================================")
