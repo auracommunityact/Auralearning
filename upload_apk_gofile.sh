@@ -1,5 +1,11 @@
 #!/bin/bash
-APK_PATH="/app/applet/app/build/outputs/apk/release/app-release.apk"
+if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+    APK_PATH="app/build/outputs/apk/release/app-release.apk"
+elif [ -f ".build-outputs/app-release.apk" ]; then
+    APK_PATH=".build-outputs/app-release.apk"
+else
+    APK_PATH="/app/applet/app/build/outputs/apk/release/app-release.apk"
+fi
 
 echo "Fetching GoFile server..."
 SERVER=$(python3 -c '

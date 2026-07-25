@@ -56,7 +56,11 @@ class RealtimeNotificationService : Service() {
     override fun onCreate() {
         super.onCreate()
         createServiceNotificationChannel()
-        startForeground(NOTIFICATION_ID, createServiceNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, createServiceNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            startForeground(NOTIFICATION_ID, createServiceNotification())
+        }
         startListening()
     }
 

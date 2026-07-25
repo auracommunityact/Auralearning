@@ -240,7 +240,7 @@ fun HomeScreen(
                                 onViewAll = { navController.navigate("books") }
                             ) { book ->
                                 BookCard(book = book) {
-                                    navController.navigate("book_detail/${book.id}")
+                                    rootNavController.navigate("book_detail/${book.id}")
                                 }
                             }
                         }
