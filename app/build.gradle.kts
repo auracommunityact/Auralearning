@@ -80,8 +80,27 @@ android {
     }
   }
   lint {
-    abortOnError = false
-    checkReleaseBuilds = false
+    checkReleaseBuilds = true
+    abortOnError = true
+    checkDependencies = true
+    ignoreWarnings = false
+    warningsAsErrors = false
+    explainIssues = true
+    textReport = true
+    xmlReport = true
+    htmlReport = true
+
+    // Enable checks for potential memory leaks, runtime crashes, and resource leaks
+    enable += setOf(
+      "HandlerLeak",
+      "StaticFieldLeak",
+      "Recycle",
+      "WakelockTimeout",
+      "UseValueOf"
+    )
+    error += setOf(
+      "MemoryLeak"
+    )
   }
 
   compileOptions {
