@@ -45,29 +45,7 @@ import com.example.ui.home.HomeViewModel
 import kotlinx.coroutines.launch
 
 fun extractYouTubeVideoId(url: String, fallbackId: String): String? {
-    if (fallbackId.isNotBlank() && fallbackId.length >= 10) return fallbackId
-    if (url.isBlank()) return null
-
-    val patterns = listOf(
-        "youtu\\.be/([a-zA-Z0-9_-]{11})".toRegex(),
-        "youtube\\.com/watch\\?v=([a-zA-Z0-9_-]{11})".toRegex(),
-        "youtube\\.com/embed/([a-zA-Z0-9_-]{11})".toRegex(),
-        "youtube\\.com/shorts/([a-zA-Z0-9_-]{11})".toRegex(),
-        "v=([a-zA-Z0-9_-]{11})".toRegex()
-    )
-
-    for (regex in patterns) {
-        val match = regex.find(url)
-        if (match != null && match.groupValues.size > 1) {
-            return match.groupValues[1]
-        }
-    }
-
-    if (url.matches("^[a-zA-Z0-9_-]{11}$".toRegex())) {
-        return url
-    }
-
-    return null
+    return com.example.ui.components.extractYouTubeVideoId(fallbackId, url)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -111,83 +89,17 @@ fun VideoDetailsScreen(
     val isInPip by (activity?.isInPipMode ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState(initial = false)
 
     if (isInPip && video != null) {
-        val resolvedId = extractYouTubeVideoId(video.videoUrl, video.youtubeVideoId)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black),
             contentAlignment = Alignment.Center
         ) {
-            val lifecycleOwner = LocalLifecycleOwner.current
-            var webView by remember { mutableStateOf<WebView?>(null) }
-            var hasPlaybackError by remember(videoId) { mutableStateOf(false) }
-
-            DisposableEffect(lifecycleOwner) {
-                val observer = LifecycleEventObserver { _, event ->
-                    when (event) {
-                        Lifecycle.Event.ON_RESUME -> webView?.onResume()
-                        Lifecycle.Event.ON_PAUSE -> webView?.onPause()
-                        Lifecycle.Event.ON_DESTROY -> webView?.destroy()
-                        else -> {}
-                    }
-                }
-                lifecycleOwner.lifecycle.addObserver(observer)
-                onDispose {
-                    lifecycleOwner.lifecycle.removeObserver(observer)
-                    webView?.destroy()
-                }
-            }
-
-            if (!resolvedId.isNullOrBlank() && !hasPlaybackError) {
-                AndroidView(
-                    factory = { ctx ->
-                        WebView(ctx).apply {
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            settings.mediaPlaybackRequiresUserGesture = false
-                            settings.useWideViewPort = true
-                            settings.loadWithOverviewMode = true
-                            webChromeClient = WebChromeClient()
-                            webViewClient = object : WebViewClient() {
-                                override fun onReceivedError(
-                                    view: WebView?,
-                                    request: WebResourceRequest?,
-                                    error: WebResourceError?
-                                ) {
-                                    super.onReceivedError(view, request, error)
-                                    if (request?.isForMainFrame == true) {
-                                        hasPlaybackError = true
-                                    }
-                                }
-                            }
-                            webView = this
-                        }
-                    },
-                    update = { view ->
-                        val embedUrl = "https://www.youtube.com/embed/$resolvedId?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1"
-                        val html = """
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                                <style>
-                                    body { margin: 0; padding: 0; background-color: #000; overflow: hidden; }
-                                    .video-container { position: relative; width: 100vw; height: 100vh; }
-                                    .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-                                </style>
-                            </head>
-                            <body>
-                                <div class="video-container">
-                                    <iframe src="$embedUrl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                                </div>
-                            </body>
-                            </html>
-                        """.trimIndent()
-                        view.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            com.example.ui.components.YouTubePlayerComponent(
+                videoId = video.youtubeVideoId,
+                videoUrl = video.videoUrl,
+                modifier = Modifier.fillMaxSize()
+            )
         }
         return
     }
@@ -329,183 +241,13 @@ fun VideoDetailsScreen(
         ) {
             // 1. Video Player At Top
             item {
-                val lifecycleOwner = LocalLifecycleOwner.current
-                var webView by remember { mutableStateOf<WebView?>(null) }
-                var hasPlaybackError by remember(videoId) { mutableStateOf(false) }
-
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        when (event) {
-                            Lifecycle.Event.ON_RESUME -> webView?.onResume()
-                            Lifecycle.Event.ON_PAUSE -> webView?.onPause()
-                            Lifecycle.Event.ON_DESTROY -> webView?.destroy()
-                            else -> {}
-                        }
-                    }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(observer)
-                        webView?.destroy()
-                    }
-                }
-
-                Box(
+                com.example.ui.components.YouTubePlayerComponent(
+                    videoId = video.youtubeVideoId,
+                    videoUrl = video.videoUrl,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(16 / 9f)
-                        .background(Color.Black)
-                ) {
-                    if (isInvalidUrl) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.ErrorOutline,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "This video link is invalid.",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    try {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(video.videoUrl))
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000))
-                            ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Open in YouTube")
-                            }
-                        }
-                    } else if (hasPlaybackError) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Block,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "This video cannot be played inside the app because embedding is disabled by the owner.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    val intentApp = Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("vnd.youtube:$resolvedVideoId")
-                                    )
-                                    val intentBrowser = Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("https://www.youtube.com/watch?v=$resolvedVideoId")
-                                    )
-                                    try {
-                                        context.startActivity(intentApp)
-                                    } catch (ex: ActivityNotFoundException) {
-                                        try {
-                                            context.startActivity(intentBrowser)
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                        }
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000))
-                            ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Open in YouTube")
-                            }
-                        }
-                    } else {
-                        AndroidView(
-                            factory = { ctx ->
-                                WebView(ctx).apply {
-                                    settings.javaScriptEnabled = true
-                                    settings.domStorageEnabled = true
-                                    settings.mediaPlaybackRequiresUserGesture = false
-                                    settings.useWideViewPort = true
-                                    settings.loadWithOverviewMode = true
-                                    settings.allowContentAccess = true
-                                    settings.allowFileAccess = true
-                                    webChromeClient = WebChromeClient()
-                                    webViewClient = object : WebViewClient() {
-                                        override fun onReceivedError(
-                                            view: WebView?,
-                                            request: WebResourceRequest?,
-                                            error: WebResourceError?
-                                        ) {
-                                            super.onReceivedError(view, request, error)
-                                            if (request?.isForMainFrame == true) {
-                                                hasPlaybackError = true
-                                            }
-                                        }
-                                    }
-                                    webView = this
-                                }
-                            },
-                            update = { view ->
-                                val embedUrl =
-                                    "https://www.youtube.com/embed/$resolvedVideoId?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1"
-                                val html = """
-                                    <!DOCTYPE html>
-                                    <html>
-                                    <head>
-                                        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                                        <style>
-                                            body { margin: 0; padding: 0; background-color: #000; overflow: hidden; }
-                                            .video-container { position: relative; width: 100vw; height: 100vh; }
-                                            .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div class="video-container">
-                                            <iframe src="$embedUrl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                                        </div>
-                                    </body>
-                                    </html>
-                                """.trimIndent()
-                                view.loadDataWithBaseURL(
-                                    "https://www.youtube.com",
-                                    html,
-                                    "text/html",
-                                    "UTF-8",
-                                    null
-                                )
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
+                        .aspectRatio(16f / 9f)
+                )
             }
 
             // 2. Video Title & Metadata Below

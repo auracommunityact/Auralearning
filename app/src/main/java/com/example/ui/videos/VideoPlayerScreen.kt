@@ -149,65 +149,13 @@ fun VideoPlayerScreen(
                 // Video Player
                 item {
                     val context = LocalContext.current
-                    val lifecycleOwner = LocalLifecycleOwner.current
-                    var webView by remember { mutableStateOf<WebView?>(null) }
                     
-                    DisposableEffect(lifecycleOwner) {
-                        val observer = LifecycleEventObserver { _, event ->
-                            when (event) {
-                                Lifecycle.Event.ON_RESUME -> webView?.onResume()
-                                Lifecycle.Event.ON_PAUSE -> webView?.onPause()
-                                Lifecycle.Event.ON_DESTROY -> webView?.destroy()
-                                else -> {}
-                            }
-                        }
-                        lifecycleOwner.lifecycle.addObserver(observer)
-                        onDispose {
-                            lifecycleOwner.lifecycle.removeObserver(observer)
-                            webView?.destroy()
-                        }
-                    }
-
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        AndroidView(
-                            factory = { ctx ->
-                                WebView(ctx).apply {
-                                    settings.javaScriptEnabled = true
-                                    settings.domStorageEnabled = true
-                                    settings.mediaPlaybackRequiresUserGesture = false
-                                    settings.useWideViewPort = true
-                                    settings.loadWithOverviewMode = true
-                                    settings.allowContentAccess = true
-                                    settings.allowFileAccess = true
-                                    webChromeClient = WebChromeClient()
-                                    webViewClient = WebViewClient()
-                                    webView = this
-                                }
-                            },
-                            update = { view ->
-                                val embedUrl = "https://www.youtube.com/embed/${video!!.youtubeVideoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&origin=https://www.youtube.com"
-                                val html = """
-                                    <!DOCTYPE html>
-                                    <html>
-                                    <head>
-                                        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                                        <style>
-                                            body { margin: 0; padding: 0; background-color: #000; }
-                                            .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }
-                                            .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div class="video-container">
-                                            <iframe src="$embedUrl" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                                        </div>
-                                    </body>
-                                    </html>
-                                """.trimIndent()
-                                view.loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null)
-                            },
+                        com.example.ui.components.YouTubePlayerComponent(
+                            videoId = video?.youtubeVideoId,
+                            videoUrl = video?.videoUrl,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(16f / 9f)
@@ -227,17 +175,11 @@ fun VideoPlayerScreen(
                             )
                             TextButton(
                                 onClick = {
-                                    val intentApp = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:${video!!.youtubeVideoId}"))
-                                    val intentBrowser = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${video!!.youtubeVideoId}"))
-                                    try {
-                                        context.startActivity(intentApp)
-                                    } catch (ex: ActivityNotFoundException) {
-                                        try {
-                                            context.startActivity(intentBrowser)
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                        }
-                                    }
+                                    com.example.ui.components.openInYouTubeAppOrBrowser(
+                                        context = context,
+                                        fullUrl = video?.videoUrl ?: "",
+                                        videoId = video?.youtubeVideoId
+                                    )
                                 }
                             ) {
                                 Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))

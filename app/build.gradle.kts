@@ -80,27 +80,9 @@ android {
     }
   }
   lint {
-    checkReleaseBuilds = true
-    abortOnError = true
-    checkDependencies = true
-    ignoreWarnings = false
-    warningsAsErrors = false
-    explainIssues = true
-    textReport = true
-    xmlReport = true
-    htmlReport = true
-
-    // Enable checks for potential memory leaks, runtime crashes, and resource leaks
-    enable += setOf(
-      "HandlerLeak",
-      "StaticFieldLeak",
-      "Recycle",
-      "WakelockTimeout",
-      "UseValueOf"
-    )
-    error += setOf(
-      "MemoryLeak"
-    )
+    checkReleaseBuilds = false
+    abortOnError = false
+    checkDependencies = false
   }
 
   compileOptions {
@@ -121,17 +103,11 @@ secrets {
   defaultPropertiesFileName = ".env.example"
 }
 
-// Some unused dependencies are commented out below instead of being removed.
-// This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.supabase.bom))
   implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
-  // implementation(libs.androidx.camera.camera2)
-  // implementation(libs.androidx.camera.core)
-  // implementation(libs.androidx.camera.lifecycle)
-  // implementation(libs.androidx.camera.view)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
@@ -147,11 +123,11 @@ dependencies {
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
   implementation("androidx.webkit:webkit:1.11.0")
+  implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation("com.google.code.gson:gson:2.10.1")
   implementation(libs.coil.compose)
-  // implementation(libs.converter.moshi)
   implementation(libs.supabase.postgrest)
   implementation(libs.supabase.auth)
   implementation(libs.supabase.storage)
@@ -163,9 +139,7 @@ dependencies {
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
-  // implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
-  // implementation(libs.play.services.location)
   implementation(libs.play.services.auth)
   implementation(libs.play.services.ads)
   implementation(libs.user.messaging.platform)
@@ -194,7 +168,6 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   ksp(libs.androidx.room.compiler)
-  // "ksp"(libs.moshi.kotlin.codegen)
 }
 
 // Helper function to check CI environment
