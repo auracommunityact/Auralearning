@@ -377,11 +377,15 @@ fun GlobalSearchScreen(
 
     LaunchedEffect(speechResult) {
         if (speechResult.isNotEmpty()) {
-            searchQuery = speechResult
-            isSearchConfirmed = true
-            addToHistory(speechResult)
-            focusManager.clearFocus()
-            voiceHelper.clearSpeechResult()
+            if (!com.example.utils.NetworkUtils.isNetworkAvailable(context)) {
+                android.widget.Toast.makeText(context, "Offline: Please check your internet connection.", android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                searchQuery = speechResult
+                isSearchConfirmed = true
+                addToHistory(speechResult)
+                focusManager.clearFocus()
+                voiceHelper.clearSpeechResult()
+            }
         }
     }
 
@@ -538,9 +542,13 @@ fun GlobalSearchScreen(
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             keyboardActions = KeyboardActions(onSearch = {
                                 if (searchQuery.isNotBlank()) {
-                                    isSearchConfirmed = true
-                                    addToHistory(searchQuery)
-                                    focusManager.clearFocus()
+                                    if (!com.example.utils.NetworkUtils.isNetworkAvailable(context)) {
+                                        android.widget.Toast.makeText(context, "Offline: Please check your internet connection.", android.widget.Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        isSearchConfirmed = true
+                                        addToHistory(searchQuery)
+                                        focusManager.clearFocus()
+                                    }
                                 }
                             }),
                             decorationBox = { innerTextField ->
@@ -601,10 +609,14 @@ fun GlobalSearchScreen(
                     if (searchQuery.isNotEmpty()) {
                         items(suggestions) { suggestion ->
                             SuggestionItem(suggestion) {
-                                searchQuery = suggestion
-                                isSearchConfirmed = true
-                                addToHistory(suggestion)
-                                focusManager.clearFocus()
+                                if (!com.example.utils.NetworkUtils.isNetworkAvailable(context)) {
+                                    android.widget.Toast.makeText(context, "Offline: Please check your internet connection.", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    searchQuery = suggestion
+                                    isSearchConfirmed = true
+                                    addToHistory(suggestion)
+                                    focusManager.clearFocus()
+                                }
                             }
                         }
                     } else {
@@ -627,10 +639,14 @@ fun GlobalSearchScreen(
                                 HistoryRow(
                                     item = item,
                                     onSelect = {
-                                        searchQuery = item.query
-                                        isSearchConfirmed = true
-                                        addToHistory(item.query)
-                                        focusManager.clearFocus()
+                                        if (!com.example.utils.NetworkUtils.isNetworkAvailable(context)) {
+                                            android.widget.Toast.makeText(context, "Offline: Please check your internet connection.", android.widget.Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            searchQuery = item.query
+                                            isSearchConfirmed = true
+                                            addToHistory(item.query)
+                                            focusManager.clearFocus()
+                                        }
                                     },
                                     onDelete = { deleteHistoryItem(item) },
                                     onPin = { togglePin(item) }

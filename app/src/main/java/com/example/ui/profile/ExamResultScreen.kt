@@ -289,12 +289,11 @@ fun ResultWebViewScreen(navController: NavController, url: String, title: String
                     },
                     actions = {
                         IconButton(onClick = {
-                            com.example.utils.ShareHelper.shareContent(
-                                context = context,
-                                title = title,
-                                contentType = "page",
-                                id = com.example.utils.ShareHelper.toSlug(title)
-                            )
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, webViewInstance?.url ?: url)
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Share URL"))
                         }) {
                             Icon(Icons.Filled.Share, contentDescription = "Share Page")
                         }
