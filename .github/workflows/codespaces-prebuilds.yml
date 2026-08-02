@@ -1,0 +1,108 @@
+# Codespaces prebuild template uploader with robust auth, packaging, retries and logging
+name: Codespaces Prebuilds - Upload Template
+
+on:
+  workflow_dispatch:
+  # Optionally run on push to main
+  # push:
+  #  branches: [ "main" ]
+
+permissions:
+  contents: read
+  codespaces: write
+
+jobs:
+  upload-prebuild-template:
+    runs-on: ubuntu-latest
+    env:
+      OWNER: auracommunityact
+      REPO: Auralearning
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create .prebuildignore
+        run: |
+          cat > .prebuildignore <<'EOF'
+          node_modules
+          **/node_modules
+          build
+          dist
+          .venv
+          .pytest_cache
+          .cache
+          .venv/
+          *.tgz
+          *.zip
+          EOF
+          echo ".prebuildignore created"
+          cat .prebuildignore
+
+      - name: Ensure .devcontainer exists
+        run: |
+          if [ ! -d ".devcontainer" ]; then
+            echo "Error: .devcontainer directory not found in repository root." >&2
+            ls -la
+            exit 1
+          fi
+          echo ".devcontainer present"
+
+      - name: Package prebuild template (tar.gz excluding heavy files)
+        run: |
+          # Create a deterministic package of .devcontainer and any referenced files
+          tar --exclude-from=.prebuildignore -czf template.tgz .devcontainer || ( echo "tar failed" && exit 1 )
+          echo "Packaged template.tgz"
+          ls -lh template.tgz || true
+
+      - name: Choose upload token (PAT fallback)
+        id: token_picker
+        run: |
+          # Prefer a user-provided PAT (secrets.CODESPACES_PAT) because GITHUB_TOKEN may not have codespaces scope.
+          if [ -n "${{ secrets.CODESPACES_PAT }}" ]; then
+            echo "Using CODESPACES_PAT from secrets"
+            echo "UPLOAD_TOKEN=${{ secrets.CODESPACES_PAT }}" >> $GITHUB_ENV
+          else
+            echo "No CODESPACES_PAT found; using GITHUB_TOKEN"
+            echo "UPLOAD_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          fi
+          echo "UPLOAD_TOKEN_set"
+
+      - name: Upload prebuild template (with retries and verbose logging)
+        env:
+          TOKEN: ${{ env.UPLOAD_TOKEN }}
+          OWNER: ${{ env.OWNER }}
+          REPO: ${{ env.REPO }}
+        run: |
+          set -euo pipefail
+          upload_url="https://api.github.com/repos/${OWNER}/${REPO}/codespaces/prebuilds/templates"
+          echo "Upload URL: $upload_url"
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt at $(date --iso-8601=seconds)"
+            # POST multi-part form: adjust field names to the API/action you actually use if different
+            http_code=$(curl -sS -o /tmp/resp -w "%{http_code}" \
+              -X POST \
+              -H "Authorization: token ${TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -F "archive=@template.tgz" \
+              "${upload_url}" || true)
+            echo "HTTP status: $http_code"
+            echo "Response body:"
+            sed -n '1,400p' /tmp/resp || true
+            if [[ "${http_code}" == 20* ]]; then
+              echo "Upload succeeded (http ${http_code})"
+              exit 0
+            fi
+            echo "Upload failed with status ${http_code}; sleeping before retry..."
+            sleep $((attempt * 10))
+          done
+          echo "All upload attempts failed. See response above for error details."
+          exit 1
+
+      - name: Debug Info (if failed earlier we still want logs)
+        if: failure()
+        run: |
+          echo "---- ls -la ----"
+          ls -la
+          echo "---- tar content listing ----"
+          tar -tzf template.tgz | sed -n '1,200p' || true
