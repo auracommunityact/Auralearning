@@ -113,6 +113,7 @@ class MainActivity : ComponentActivity() {
 
     val isInPipMode = kotlinx.coroutines.flow.MutableStateFlow(false)
 
+    @android.annotation.SuppressLint("NewApi")
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
         newConfig: android.content.res.Configuration

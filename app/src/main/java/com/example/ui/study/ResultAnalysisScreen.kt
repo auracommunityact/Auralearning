@@ -431,7 +431,7 @@ private fun scaleAndNormalizeBitmap(context: Context, uri: Uri, maxDimension: In
     } ?: throw IllegalArgumentException("Could not decode image data stream.")
 
     // Convert HARDWARE bitmaps to SOFTWARE so we can manipulate them
-    if (bitmap.config == Bitmap.Config.HARDWARE) {
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && bitmap.config == Bitmap.Config.HARDWARE) {
         bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
     }
 
