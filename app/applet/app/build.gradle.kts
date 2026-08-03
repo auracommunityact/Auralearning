@@ -13,6 +13,13 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
+    }
 }
 
 dependencies {
@@ -27,3 +34,5 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.webkit:webkit:1.10.0")
 }
+
+
