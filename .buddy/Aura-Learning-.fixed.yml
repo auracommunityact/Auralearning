@@ -8,6 +8,7 @@
   actions:
   - action: ./gradlew assembleRelease
     type: BUILD
+    disabled: true
     commands: |-
       export ANDROID_HOME="/opt/android/sdk"
       export PATH=$PATH:/opt/android/sdk/cmdline-tools/tools/bin
