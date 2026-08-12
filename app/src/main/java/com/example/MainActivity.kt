@@ -12,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import com.example.ui.theme.AuraTheme
 import com.example.ui.theme.ThemeViewModel
 
@@ -21,13 +22,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // Initialize AdMob Mobile Ads SDK optimally on startup
-        try {
-            com.example.utils.AdsManager.initialize(application, this)
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "AdsManager init error", e)
-        }
-        
         // Register all notification categories/channels with the Android system
         try {
             com.example.utils.NotificationHelper.registerNotificationChannels(this)
@@ -35,11 +29,19 @@ class MainActivity : ComponentActivity() {
             android.util.Log.e("MainActivity", "NotificationHelper error", e)
         }
         
-        // Start Realtime Notification Service
-        try {
-            com.example.notifications.RealtimeNotificationService.start(this)
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "RealtimeNotificationService start error", e)
+        // Asynchronously initialize non-critical components after UI becomes active
+        androidx.lifecycle.lifecycleScope.launchWhenResumed {
+            kotlinx.coroutines.delay(1500) // Delay to ensure splash/UI is fully drawn
+            try {
+                com.example.utils.AdsManager.initialize(application, this@MainActivity)
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "AdsManager init error", e)
+            }
+            try {
+                com.example.notifications.RealtimeNotificationService.start(this@MainActivity)
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "RealtimeNotificationService start error", e)
+            }
         }
         
         val themeViewModel = ThemeViewModel(this)

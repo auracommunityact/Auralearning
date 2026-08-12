@@ -26,6 +26,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.UUID
@@ -53,8 +54,13 @@ class RealtimeNotificationService : Service() {
         }
     }
 
+    private var isListening = false
+
     override fun onCreate() {
         super.onCreate()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
             createServiceNotificationChannel()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -62,10 +68,14 @@ class RealtimeNotificationService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, createServiceNotification())
             }
-            startListening()
+            if (!isListening) {
+                startListening()
+                isListening = true
+            }
         } catch (e: Exception) {
             Log.e("RealtimeService", "Error starting foreground service or listening", e)
         }
+        return START_STICKY
     }
 
     private fun createServiceNotificationChannel() {
@@ -114,6 +124,8 @@ class RealtimeNotificationService : Service() {
             } catch (e: Exception) {
                 Log.e("RealtimeService", "Error decoding notification", e)
             }
+        }.catch { e ->
+            Log.e("RealtimeService", "Flow error", e)
         }.launchIn(serviceScope)
 
         serviceScope.launch {
