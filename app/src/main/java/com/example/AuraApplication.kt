@@ -1,44 +1,58 @@
 package com.example
 
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
-import com.google.android.gms.ads.MobileAds
+import android.util.Log
 import com.google.firebase.FirebaseApp
 
 object AppContext {
-    lateinit var context: Context
+    private var _context: Context? = null
+
+    var context: Context
+        get() = _context ?: AuraApplication.instance
+        set(value) {
+            _context = value.applicationContext
+        }
+
+    fun init(context: Context) {
+        _context = context.applicationContext
+    }
+
+    val safeContext: Context?
+        get() = _context ?: try { AuraApplication.instance } catch (e: Exception) { null }
 }
 
 class AuraApplication : Application() {
+    companion object {
+        lateinit var instance: AuraApplication
+            private set
+    }
+
     override fun onCreate() {
         super.onCreate()
-        AppContext.context = this
+        instance = this
+        AppContext.init(this)
+
         try {
             FirebaseApp.initializeApp(this)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("AuraApp", "Firebase init error", e)
         }
 
         try {
+            com.example.utils.NotificationHelper.registerNotificationChannels(this)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("AuraApp", "NotificationHelper error", e)
         }
 
-        // Register Notification Channels
-        com.example.utils.NotificationHelper.registerNotificationChannels(this)
-        
-        // Clean up WebView Code Cache directories recursively
         try {
             val codeCacheDir = java.io.File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
             if (codeCacheDir.exists()) {
                 codeCacheDir.deleteRecursively()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("AuraApp", "WebView cache cleanup error", e)
         }
-
     }
 }
+

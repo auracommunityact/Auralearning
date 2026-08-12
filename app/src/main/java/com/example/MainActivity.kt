@@ -22,13 +22,25 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         // Initialize AdMob Mobile Ads SDK optimally on startup
-        com.example.utils.AdsManager.initialize(application, this)
+        try {
+            com.example.utils.AdsManager.initialize(application, this)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "AdsManager init error", e)
+        }
         
         // Register all notification categories/channels with the Android system
-        com.example.utils.NotificationHelper.registerNotificationChannels(this)
+        try {
+            com.example.utils.NotificationHelper.registerNotificationChannels(this)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "NotificationHelper error", e)
+        }
         
         // Start Realtime Notification Service
-        com.example.notifications.RealtimeNotificationService.start(this)
+        try {
+            com.example.notifications.RealtimeNotificationService.start(this)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "RealtimeNotificationService start error", e)
+        }
         
         val themeViewModel = ThemeViewModel(this)
         

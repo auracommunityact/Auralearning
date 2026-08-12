@@ -38,7 +38,7 @@ object AdsManager : Application.ActivityLifecycleCallbacks, DefaultLifecycleObse
     private var isInitialized = false
     
     // UMP Consent
-    private lateinit var consentInformation: ConsentInformation
+    private var consentInformation: ConsentInformation? = null
     val isConsentGathered = MutableStateFlow(false)
 
     // Interstitial
@@ -61,14 +61,22 @@ object AdsManager : Application.ActivityLifecycleCallbacks, DefaultLifecycleObse
         if (isInitialized) return
         applicationContext = application.applicationContext
         application.registerActivityLifecycleCallbacks(this)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        try {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error registering ProcessLifecycleOwner observer", e)
+        }
         
         requestConsent(activity) {
-            MobileAds.initialize(application) {
-                Log.d(TAG, "Google Mobile Ads SDK initialized successfully")
-                isInitialized = true
-                preloadInterstitial(application)
-                loadAppOpenAd(application)
+            try {
+                MobileAds.initialize(application) {
+                    Log.d(TAG, "Google Mobile Ads SDK initialized successfully")
+                    isInitialized = true
+                    preloadInterstitial(application)
+                    loadAppOpenAd(application)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error initializing MobileAds", e)
             }
         }
     }
@@ -76,20 +84,21 @@ object AdsManager : Application.ActivityLifecycleCallbacks, DefaultLifecycleObse
     private fun requestConsent(activity: Activity, onConsentGathered: () -> Unit) {
         try {
             val params = ConsentRequestParameters.Builder().build()
-            consentInformation = UserMessagingPlatform.getConsentInformation(activity)
-            consentInformation.requestConsentInfoUpdate(activity, params, {
+            val info = UserMessagingPlatform.getConsentInformation(activity)
+            consentInformation = info
+            info.requestConsentInfoUpdate(activity, params, {
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
                     if (formError != null) {
                         Log.w(TAG, "Consent form error: ${formError.message}")
                     }
-                    if (consentInformation.canRequestAds()) {
+                    if (info.canRequestAds()) {
                         isConsentGathered.value = true
                         onConsentGathered()
                     }
                 }
             }, { requestConsentError ->
                 Log.w(TAG, "Consent request error: ${requestConsentError.message}")
-                if (consentInformation.canRequestAds()) {
+                if (info.canRequestAds()) {
                     isConsentGathered.value = true
                     onConsentGathered()
                 } else {
