@@ -29,18 +29,23 @@ class MainActivity : ComponentActivity() {
             android.util.Log.e("MainActivity", "NotificationHelper error", e)
         }
         
-        // Asynchronously initialize non-critical components after UI becomes active
-        androidx.lifecycle.lifecycleScope.launchWhenResumed {
+        // Asynchronously initialize non-critical components using a custom CoroutineScope with Dispatchers.IO
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
             kotlinx.coroutines.delay(1500) // Delay to ensure splash/UI is fully drawn
-            try {
-                com.example.utils.AdsManager.initialize(application, this@MainActivity)
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "AdsManager init error", e)
-            }
+            
             try {
                 com.example.notifications.RealtimeNotificationService.start(this@MainActivity)
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "RealtimeNotificationService start error", e)
+            }
+            
+            // AdsManager initialization requires Main thread for ProcessLifecycleOwner & UI operations
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                try {
+                    com.example.utils.AdsManager.initialize(application, this@MainActivity)
+                } catch (e: Exception) {
+                    android.util.Log.e("MainActivity", "AdsManager init error", e)
+                }
             }
         }
         
