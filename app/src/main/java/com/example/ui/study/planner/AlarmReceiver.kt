@@ -36,7 +36,7 @@ class AlarmReceiver : BroadcastReceiver() {
                             notificationManager.createNotificationChannel(channel)
                         }
 
-                        val mainIntent = Intent(context, Class.forName("com.example.MainActivity")).apply {
+                        val mainIntent = Intent(context, com.example.MainActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         }
                         val pendingIntent = PendingIntent.getActivity(

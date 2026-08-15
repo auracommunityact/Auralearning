@@ -1,5 +1,0 @@
-Uploading to store-eu-par-2.gofile.io...
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0 83.8M    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0 83.8M  100    19    0  832k     20   896k  0:01:35 --:--:--  0:01:35  896k
-404 page not found

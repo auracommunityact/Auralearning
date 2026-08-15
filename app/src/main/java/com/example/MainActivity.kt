@@ -13,6 +13,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.ui.theme.AuraTheme
 import com.example.ui.theme.ThemeViewModel
 
@@ -29,9 +33,9 @@ class MainActivity : ComponentActivity() {
             android.util.Log.e("MainActivity", "NotificationHelper error", e)
         }
         
-        // Asynchronously initialize non-critical components using a custom CoroutineScope with Dispatchers.IO
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
-            kotlinx.coroutines.delay(1500) // Delay to ensure splash/UI is fully drawn
+        // Asynchronously initialize non-critical components using lifecycleScope with Dispatchers.IO
+        lifecycleScope.launch(Dispatchers.IO) {
+            delay(1500) // Delay to ensure splash/UI is fully drawn
             
             try {
                 com.example.notifications.RealtimeNotificationService.start(this@MainActivity)
@@ -40,7 +44,7 @@ class MainActivity : ComponentActivity() {
             }
             
             // AdsManager initialization requires Main thread for ProcessLifecycleOwner & UI operations
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            withContext(Dispatchers.Main) {
                 try {
                     com.example.utils.AdsManager.initialize(application, this@MainActivity)
                 } catch (e: Exception) {
@@ -124,7 +128,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AuraLearningApp(themeViewModel = themeViewModel, initialDeepLink = initialDeepLink)
+                    com.example.ui.components.ErrorBoundary {
+                        AuraLearningApp(themeViewModel = themeViewModel, initialDeepLink = initialDeepLink)
+                    }
                 }
             }
         }

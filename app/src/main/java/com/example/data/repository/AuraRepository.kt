@@ -1269,8 +1269,8 @@ class AuraRepository {
                 filter { eq("id", feedbackId) }
             }.decodeList<com.example.data.models.Feedback>()
             
-            if (feedbacks.isNotEmpty()) {
-                val feedback = feedbacks.first()
+            val feedback = feedbacks.firstOrNull()
+            if (feedback != null) {
                 val upvotedByList = feedback.upvotedBy.toMutableList()
                 val isUpvoted = upvotedByList.contains(userId)
                 

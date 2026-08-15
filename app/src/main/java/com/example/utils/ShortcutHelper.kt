@@ -117,7 +117,7 @@ object ShortcutHelper {
             val webUrl = "https://aura.auralearning.workers.dev/$type/$slug"
 
             // Build intent to open the content in the app
-            val intent = Intent(context, Class.forName("com.example.MainActivity")).apply {
+            val intent = Intent(context, com.example.MainActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
                 data = Uri.parse(webUrl)
                 putExtra("deep_link", internalRoute)
@@ -223,7 +223,7 @@ object ShortcutHelper {
                     val slug = toSlug(title)
                     val webUrl = "https://aura.auralearning.workers.dev/$type/$slug"
 
-                    val intent = Intent(context, Class.forName("com.example.MainActivity")).apply {
+                    val intent = Intent(context, com.example.MainActivity::class.java).apply {
                         action = Intent.ACTION_VIEW
                         data = Uri.parse(webUrl)
                         putExtra("deep_link", internalRoute)

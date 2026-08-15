@@ -408,8 +408,8 @@ class BookSummaryViewModel(application: Application) : AndroidViewModel(applicat
 
         if (detected.isEmpty() && pageNumbers.isNotEmpty()) {
             val chunkSize = 4
-            val minPage = pageNumbers.first()
-            val maxPage = pageNumbers.last()
+            val minPage = pageNumbers.firstOrNull() ?: 1
+            val maxPage = pageNumbers.lastOrNull() ?: 1
             var start = minPage
             var sectionNum = 1
             while (start <= maxPage) {
@@ -424,13 +424,14 @@ class BookSummaryViewModel(application: Application) : AndroidViewModel(applicat
                 start = end + 1
                 sectionNum++
             }
-        } else if (pageNumbers.isNotEmpty()) {
+        } else if (pageNumbers.isNotEmpty() && detected.isNotEmpty()) {
             val firstStart = detected.first().startPage
-            if (pageNumbers.first() < firstStart) {
+            val firstPage = pageNumbers.firstOrNull() ?: 1
+            if (firstPage < firstStart) {
                 chaptersWithRanges.add(
                     DetectedChapterRange(
                         title = "Chapter title not detected.",
-                        startPage = pageNumbers.first(),
+                        startPage = firstPage,
                         endPage = firstStart - 1
                     )
                 )

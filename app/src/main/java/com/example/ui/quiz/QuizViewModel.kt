@@ -30,8 +30,8 @@ class QuizViewModel(private val repository: AuraRepository = AuraRepository()) :
             _error.value = null
             try {
                 val quizzes = repository.getQuizzes(associatedId = associatedId)
-                if (quizzes.isNotEmpty()) {
-                    val q = quizzes.first()
+                val q = quizzes.firstOrNull()
+                if (q != null) {
                     _quiz.value = q
                     _questions.value = repository.getQuizQuestions(q.id)
                 } else {

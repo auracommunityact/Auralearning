@@ -60,7 +60,7 @@ fun AdminQuestionPaperUploadScreen(navController: NavController) {
         scope.launch {
             sectionsFromDb = repository.getQuestionPaperSections().filter { it.isActive }
             if (sectionsFromDb.isNotEmpty() && className.isEmpty()) {
-                className = sectionsFromDb.first().name
+                className = sectionsFromDb.firstOrNull()?.name ?: ""
             }
         }
     }

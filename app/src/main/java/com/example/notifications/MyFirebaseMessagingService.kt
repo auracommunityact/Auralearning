@@ -50,7 +50,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
                 if (enabled) {
                     db.notificationDao().insertNotification(notification)
-                    // TODO: Show system notification here
+                    com.example.utils.NotificationHelper.showNotification(
+                        applicationContext,
+                        notification.title,
+                        notification.description,
+                        category,
+                        notification.deepLink
+                    )
                 }
             }
         }

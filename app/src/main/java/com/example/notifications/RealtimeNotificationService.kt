@@ -92,7 +92,7 @@ class RealtimeNotificationService : Service() {
     }
 
     private fun createServiceNotification(): Notification {
-        val intent = Intent(this, Class.forName("com.example.MainActivity"))
+        val intent = Intent(this, com.example.MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -166,7 +166,7 @@ class RealtimeNotificationService : Service() {
     private fun showPushNotification(notif: SupabaseNotification) {
         val channelId = getChannelForCategory(notif.category)
         
-        val intent = Intent(this, Class.forName("com.example.MainActivity")).apply {
+        val intent = Intent(this, com.example.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("notification_id", notif.id)
             putExtra("deep_link", notif.deep_link)

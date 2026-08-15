@@ -99,18 +99,18 @@ fun ExamResultScreen(navController: NavController, rootNavController: NavControl
         }
     }
 
-    val staticBoards = remember {
+    val staticBoards: List<BoardResult> = remember {
         val type = object : TypeToken<List<BoardResult>>() {}.type
-        Gson().fromJson<List<BoardResult>>(boardsJson, type)
+        Gson().fromJson<List<BoardResult>>(boardsJson, type) ?: emptyList()
     }
 
-    val allCombinedBoards = remember(staticBoards, dynamicBoards) {
+    val allCombinedBoards: List<BoardResult> = remember(staticBoards, dynamicBoards) {
         dynamicBoards + staticBoards
     }
 
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredBoards = remember(searchQuery, allCombinedBoards) {
+    val filteredBoards: List<BoardResult> = remember(searchQuery, allCombinedBoards) {
         allCombinedBoards.filter { it.board.contains(searchQuery, ignoreCase = true) }
     }
 

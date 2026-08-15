@@ -91,4 +91,51 @@ object NotificationHelper {
             }
         }
     }
+
+    fun showNotification(
+        context: Context,
+        title: String,
+        message: String,
+        category: String = "General",
+        deepLink: String? = null
+    ) {
+        val channelId = when (category.lowercase()) {
+            "books" -> CHANNEL_NEW_BOOKS
+            "videos" -> CHANNEL_NEW_VIDEOS
+            "tools", "resources" -> CHANNEL_NEW_TOOLS
+            "announcements" -> CHANNEL_ANNOUNCEMENTS
+            "updates" -> CHANNEL_APP_UPDATES
+            else -> CHANNEL_SYSTEM
+        }
+
+        val intent = android.content.Intent(context, com.example.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+            if (!deepLink.isNullOrBlank()) {
+                putExtra("deep_link", deepLink)
+            }
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            context,
+            System.currentTimeMillis().toInt(),
+            intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+
+        val notificationManager = androidx.core.app.NotificationManagerCompat.from(context)
+        try {
+            notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

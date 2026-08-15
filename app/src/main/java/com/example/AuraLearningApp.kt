@@ -56,6 +56,7 @@ import com.example.ui.videos.VideosScreen
 import com.example.ui.theme.ThemeViewModel
 import com.example.ui.gamification.LeaderboardScreen
 import com.example.ui.gamification.LeaderboardViewModel
+import com.example.ui.components.ErrorBoundary
 
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
@@ -553,56 +554,66 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+        ErrorBoundary(
+            onGoHome = {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
         ) {
-            composable(Screen.Home.route) { HomeScreen(navController, authViewModel, rootNavController) }
-            composable(
-                "global_search?query={query}",
-                arguments = listOf(androidx.navigation.navArgument("query") { defaultValue = "" })
-            ) { backStackEntry ->
-                val query = backStackEntry.arguments?.getString("query") ?: ""
-                com.example.ui.home.GlobalSearchScreen(navController, rootNavController, initialQuery = query)
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            ) {
+                composable(Screen.Home.route) { HomeScreen(navController, authViewModel, rootNavController) }
+                composable(
+                    "global_search?query={query}",
+                    arguments = listOf(androidx.navigation.navArgument("query") { defaultValue = "" })
+                ) { backStackEntry ->
+                    val query = backStackEntry.arguments?.getString("query") ?: ""
+                    com.example.ui.home.GlobalSearchScreen(navController, rootNavController, initialQuery = query)
+                }
+                composable(Screen.Videos.route) { VideosScreen(navController, rootNavController) }
+                composable(Screen.QuestionPapers.route) { QuestionPaperListingScreen(navController) }
+                composable(Screen.Books.route) { BooksScreen(navController, authViewModel, rootNavController) }
+                composable("resources") { com.example.ui.home.ResourcesScreen(navController, rootNavController) }
+                composable(Screen.Chat.route) { com.example.ui.chat.ChatListScreen(navController) }
+                composable(
+                    "chat_room/{conversationId}",
+                    arguments = listOf(androidx.navigation.navArgument("conversationId") { type = androidx.navigation.NavType.StringType })
+                ) { backStackEntry -> 
+                    val id = backStackEntry.arguments?.getString("conversationId") ?: return@composable
+                    com.example.ui.chat.ChatRoomScreen(navController, id) 
+                }
+                composable(
+                    "chat_details/{conversationId}",
+                    arguments = listOf(androidx.navigation.navArgument("conversationId") { type = androidx.navigation.NavType.StringType })
+                ) { backStackEntry ->
+                    val id = backStackEntry.arguments?.getString("conversationId") ?: ""
+                    com.example.ui.chat.ChatDetailsScreen(navController, id)
+                }
+                composable(
+                    "media_viewer?url={url}",
+                    arguments = listOf(androidx.navigation.navArgument("url") { type = androidx.navigation.NavType.StringType; defaultValue = "" })
+                ) { backStackEntry ->
+                    val url = backStackEntry.arguments?.getString("url") ?: ""
+                    com.example.ui.chat.MediaViewerScreen(navController, url)
+                }
+                composable(
+                    "profile_details/{userId}",
+                    arguments = listOf(androidx.navigation.navArgument("userId") { type = androidx.navigation.NavType.StringType; defaultValue = "" })
+                ) { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    com.example.ui.profile.ProfileDetailsScreen(rootNavController, authViewModel, userId)
+                }
+                composable("profile_details") {
+                    com.example.ui.profile.ProfileDetailsScreen(rootNavController, authViewModel, null)
+                }
+                composable(Screen.Profile.route) { ProfileScreen(navController, authViewModel, rootNavController, themeViewModel) }
             }
-            composable(Screen.Videos.route) { VideosScreen(navController, rootNavController) }
-            composable(Screen.QuestionPapers.route) { QuestionPaperListingScreen(navController) }
-            composable(Screen.Books.route) { BooksScreen(navController, authViewModel, rootNavController) }
-            composable("resources") { com.example.ui.home.ResourcesScreen(navController, rootNavController) }
-            composable(Screen.Chat.route) { com.example.ui.chat.ChatListScreen(navController) }
-            composable(
-                "chat_room/{conversationId}",
-                arguments = listOf(androidx.navigation.navArgument("conversationId") { type = androidx.navigation.NavType.StringType })
-            ) { backStackEntry -> 
-                val id = backStackEntry.arguments?.getString("conversationId") ?: return@composable
-                com.example.ui.chat.ChatRoomScreen(navController, id) 
-            }
-            composable(
-                "chat_details/{conversationId}",
-                arguments = listOf(androidx.navigation.navArgument("conversationId") { type = androidx.navigation.NavType.StringType })
-            ) { backStackEntry ->
-                val id = backStackEntry.arguments?.getString("conversationId") ?: ""
-                com.example.ui.chat.ChatDetailsScreen(navController, id)
-            }
-            composable(
-                "media_viewer?url={url}",
-                arguments = listOf(androidx.navigation.navArgument("url") { type = androidx.navigation.NavType.StringType; defaultValue = "" })
-            ) { backStackEntry ->
-                val url = backStackEntry.arguments?.getString("url") ?: ""
-                com.example.ui.chat.MediaViewerScreen(navController, url)
-            }
-            composable(
-                "profile_details/{userId}",
-                arguments = listOf(androidx.navigation.navArgument("userId") { type = androidx.navigation.NavType.StringType; defaultValue = "" })
-            ) { backStackEntry ->
-                val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                com.example.ui.profile.ProfileDetailsScreen(rootNavController, authViewModel, userId)
-            }
-            composable("profile_details") {
-                com.example.ui.profile.ProfileDetailsScreen(rootNavController, authViewModel, null)
-            }
-            composable(Screen.Profile.route) { ProfileScreen(navController, authViewModel, rootNavController, themeViewModel) }
         }
     }
 }
